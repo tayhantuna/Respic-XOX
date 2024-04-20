@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Respic-XOX</title>
+    <style>
+       body {
+  background-color: #f0f0f0;
+  font-family: 'Arial', sans-serif;
+}
+
+.container {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+h1 {
+  color: #333;
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(5, 100px);
+  gap: 5px;
+  margin: 20px auto;
+}
+
+.cell {
+  width: 100px;
+  height: 100px;
+  border: 1px solid #ccc;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 36px;
+  cursor: pointer;
+  background-color: #fff;
+}
+
+.cell:hover {
+  background-color: #ddd;
+}
+
+button {
+  margin-top: 20px;
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+.x-mark {
+    color: red;
+}
+      .navbar {
+    background-color: #333;
+    color: #fff;
+}
+
+.navbar ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+.navbar li {
+    float: left;
+}
+
+.navbar li a {
+    display: block;
+    color: #fff;
+    text-align: center;
+    padding: 14px 16px;
+    text-decoration: none;
+}
+
+.navbar li a:hover {
+    background-color: #555;
+}
+    </style>
+    
+</head>
+<body>
+  <nav class="navbar">
+        <ul>
+            <li><a href="index.html">Klasik Mod</a></li>
+            <li><a href="D3.html">Küp Modu</a></li>
+            <li><a href="P3.html">3 Kişilik Mod</a></li>
+            <li><a href="bot.html">Bot Modu</a></li>
+        </ul>
+  </nav>
+    <div class="container">
+        <h1>Tic Tac Toe-Bot Modu</h1>
+        <div id="board" class="board">
+            <!-- Tic Tac Toe board will be generated here -->
+        </div>
+        <div id="message"></div>
+        <button id="restartBtn">Yeniden Başlat</button>
+    </div>
+    <script>
+      document.addEventListener("DOMContentLoaded", function() {
+    const board = document.getElementById("board");
+    const restartBtn = document.getElementById("restartBtn");
+    const message = document.getElementById("message");
+    const cells = [];
+    const BOARD_SIZE = 5;
+    const WINNING_LENGTH = 4;
+    const MAX_DEPTH = 3; // Derinlik sınırlaması
+
+    let currentPlayer = "X";
+    let gameActive = true;
+
+    // Initialize the game board
+    for (let i = 0; i < BOARD_SIZE * BOARD_SIZE; i++) {
+        const cell = document.createElement("div");
+        cell.classList.add("cell");
+        cell.dataset.index = i;
+        cell.addEventListener("click", () => cellClickHandler(cell));
+        cells.push(cell);
+        board.appendChild(cell);
+    }
+
+    // Handle cell click
+    function cellClickHandler(cell) {
+        if (!gameActive || cell.textContent !== "") return;
+        cell.textContent = currentPlayer;
+        cell.style.color = currentPlayer === 'X' ? 'red' : 'blue'; // X'in rengini kırmızı, O'nun rengini mavi yap
+        if (checkWin(cells, currentPlayer)) {
+            endGame(currentPlayer + " kazandı!");
+        } else if (checkDraw(cells)) {
+            endGame("Berabere!");
+        } else {
+            currentPlayer = currentPlayer === "X" ? "O" : "X";
+            if (currentPlayer === "O") {
+                message.textContent = "Sıra bot'ta";
+                botMove();
+            } else {
+                message.textContent = "Sıra oyuncuda";
+            }
+        }
+    }
+
+    // Bot move using minimax algorithm with alpha-beta pruning
+    function botMove() {
+        let bestScore = -Infinity;
+        let move;
+        for (let i = 0; i < cells.length; i++) {
+            if (cells[i].textContent === "") {
+                cells[i].textContent = currentPlayer;
+                let score = minimax(cells, 0, false, -Infinity, Infinity);
+                cells[i].textContent = "";
+                if (score > bestScore) {
+                    bestScore = score;
+                    move = i;
+                }
+            }
+        }
+        cells[move].textContent = currentPlayer;
+        cells[move].style.color = "blue"; // O'nun rengini mavi yap
+        if (checkWin(cells, currentPlayer)) {
+            endGame(currentPlayer + " kazandı!");
+        } else if (checkDraw(cells)) {
+            endGame("Berabere!");
+        } else {
+            currentPlayer = "X";
+            message.textContent = "Sıra oyuncuda";
+        }
+    }
+
+    // Minimax algorithm for bot move with alpha-beta pruning
+    function minimax(cells, depth, isMaximizing, alpha, beta) {
+        if (checkWin(cells, "X")) {
+            return -10 + depth;
+        } else if (checkWin(cells, "O")) {
+            return 10 - depth;
+        } else if (checkDraw(cells)) {
+            return 0;
+        }
+        if (depth >= MAX_DEPTH) { // Derinlik sınırlaması kontrolü
+            return 0;
+        }
+        if (isMaximizing) {
+            let bestScore = -Infinity;
+            for (let i = 0; i < cells.length; i++) {
+                if (cells[i].textContent === "") {
+                    cells[i].textContent = "O";
+                    let score = minimax(cells, depth + 1, false, alpha, beta);
+                    cells[i].textContent = "";
+                    bestScore = Math.max(score, bestScore);
+                    alpha = Math.max(alpha, score);
+                    if (beta <= alpha) break;
+                }
+            }
+            return bestScore;
+        } else {
+            let bestScore = Infinity;
+            for (let i = 0; i < cells.length; i++) {
+                if (cells[i].textContent === "") {
+                    cells[i].textContent = "X";
+                    let score = minimax(cells, depth + 1, true, alpha, beta);
+                    cells[i].textContent = "";
+                    bestScore = Math.min(score, bestScore);
+                    beta = Math.min(beta, score);
+                    if (beta <= alpha) break;
+                }
+            }
+            return bestScore;
+        }
+    }
+
+    // Check for a win
+    function checkWin(cells, player) {
+        for (let i = 0; i < BOARD_SIZE; i++) {
+            for (let j = 0; j < BOARD_SIZE; j++) {
+                if (cells[i * BOARD_SIZE + j].textContent === player) {
+                    // Check horizontal, vertical, diagonal, and anti-diagonal
+                    for (let dx = -1; dx <= 1; dx++) {
+                        for (let dy = -1; dy <= 1; dy++) {
+                            if (dx === 0 && dy === 0) continue;
+                            let count = 1;
+                            for (let k = 1; k < WINNING_LENGTH; k++) {
+                                let ni = i + dx * k;
+                                let nj = j + dy * k;
+                                if (ni < 0 || ni >= BOARD_SIZE || nj < 0 || nj >= BOARD_SIZE || cells[ni * BOARD_SIZE + nj].textContent !== player) break;
+                                count++;
+                            }
+                            if (count === WINNING_LENGTH) return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    // Check for a draw
+    function checkDraw(cells) {
+        return cells.every(cell => cell.textContent !== "");
+    }
+
+    // End the game
+    function endGame(messageText) {
+        message.textContent = messageText;
+        gameActive = false;
+    }
+
+    // Restart the game
+    restartBtn.addEventListener("click", () => {
+        cells.forEach(cell => {
+            cell.textContent = "";
+        });
+        currentPlayer = "X";
+        gameActive = true;
+        message.textContent = "";
+        if (currentPlayer === "O") {
+            message.textContent = "Sıra bot'ta";
+            botMove();
+        } else {
+            message.textContent = "Sıra oyuncuda";
+        }
+    });
+});
+    </script>
+</body>
+</html>
